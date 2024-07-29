@@ -94,21 +94,39 @@ jobs:
           gcloud services enable artifactregistry.googleapis.com
           gcloud services enable run.googleapis.com
 
+      - name: Create Artifact Registry repository
+        run: |
+          gcloud artifacts repositories create ${{ env.GCP_APP_NAME }} \
+            --repository-format=docker \
+            --location=asia-southeast2 \
+            --description="Docker repository for ${{ env.GCP_APP_NAME }}"
+        continue-on-error: true
+
       - name: Configure Docker for GCP
         run: gcloud auth configure-docker ${{ env.GCP_REGISTRY }} --quiet
 
       - name: Pull image from GHCR
         run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+      - name: Debug - List Artifact Registry repositories
+        run: |
+          echo "Listing Artifact Registry repositories"
+          gcloud artifacts repositories list --location=asia-southeast2
+
+      - name: Debug - Verify Docker configuration
+        run: |
+          echo "Verifying Docker configuration"
+          docker info
+          
       - name: Tag and push image to GCP
         run: |
-          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
-          docker push ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
+          docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
+          docker push ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
 
       - name: Deploy Docker Image to Google Cloud Run
         run: |
           gcloud run deploy ${{ secrets.APPLICATION }} \
-            --image ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}:${{ github.sha }} \
+            --image ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}/${{ env.GCP_APP_NAME }}:${{ github.sha }} \
             --region asia-southeast2 \
             --platform managed \
             --allow-unauthenticated \

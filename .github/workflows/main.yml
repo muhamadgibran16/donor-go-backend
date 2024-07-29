@@ -136,18 +136,20 @@ jobs:
 
       - name: Prepare environment variables
         run: |
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> env_vars.txt
-          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> env_vars.txt
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> env_vars.txt
-          echo "DB_PASS=${{ secrets.DB_PASS }}" >> env_vars.txt
-          echo "DB_PORT=${{ secrets.DB_PORT }}" >> env_vars.txt
-          echo "REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}" >> env_vars.txt
-          echo "ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}" >> env_vars.txt
-          echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> env_vars.txt
-          echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> env_vars.txt
+          cat << EOF > env_vars.yaml
+          DB_NAME: "${{ secrets.DB_NAME }}"
+          DB_USERNAME: "${{ secrets.DB_USERNAME }}"
+          DB_HOST: "${{ secrets.DB_HOST }}"
+          DB_PASS: "${{ secrets.DB_PASS }}"
+          DB_PORT: "${{ secrets.DB_PORT }}"
+          REFRESH_TOKEN_SECRET_KEY: "${{ secrets.REFRESH_TOKEN_SECRET_KEY }}"
+          ACCESS_TOKEN_SECRET_KEY: "${{ secrets.ACCESS_TOKEN_SECRET_KEY }}"
+          MAIL_USERNAME: "${{ secrets.MAIL_USERNAME }}"
+          MAIL_PASSWORD: "${{ secrets.MAIL_PASSWORD }}"
+          EOF
 
-      - name: Debug - Check env_vars.txt content
-        run: cat env_vars.txt
+      - name: Debug - Check env_vars.yaml content
+        run: cat env_vars.yaml
 
       - name: Deploy Docker Image to Google Cloud Run
         run: |
@@ -157,7 +159,7 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8080 \
-            --env-vars-file env_vars.txt \
+            --env-vars-file env_vars.yaml \
             --verbosity=debug
 
       - name: Debug - Check deployment status
@@ -170,6 +172,6 @@ jobs:
       - name: Debug - Check recent logs
         if: failure()
         run: |
-          gcloud run logs read --service=${{ secrets.APPLICATION }} \
+          gcloud run services logs read --service=${{ secrets.APPLICATION }} \
             --region=asia-southeast2 \
             --limit=50

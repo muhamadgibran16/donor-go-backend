@@ -78,6 +78,11 @@ jobs:
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
 
+      - name: Enable necessary APIs
+        run: |
+          gcloud services enable artifactregistry.googleapis.com
+          gcloud services enable run.googleapis.com
+
       - name: Configure Docker for GCP
         run: gcloud auth configure-docker ${{ env.GCP_REGISTRY }} --quiet
 

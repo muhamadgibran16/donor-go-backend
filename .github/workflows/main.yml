@@ -123,6 +123,21 @@ jobs:
           docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
           docker push ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
 
+      - name: Prepare environment variables
+        run: |
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> env_vars.txt
+          echo "DB_USERNAME=${{ secrets.DB_USERNAME }}" >> env_vars.txt
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> env_vars.txt
+          echo "DB_PASS=${{ secrets.DB_PASS }}" >> env_vars.txt
+          echo "DB_PORT=${{ secrets.DB_PORT }}" >> env_vars.txt
+          echo "REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}" >> env_vars.txt
+          echo "ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}" >> env_vars.txt
+          echo "MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" >> env_vars.txt
+          echo "MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}" >> env_vars.txt
+
+      - name: Debug - Check env_vars.txt content
+        run: cat env_vars.txt
+
       - name: Deploy Docker Image to Google Cloud Run
         run: |
           gcloud run deploy ${{ secrets.APPLICATION }} \
@@ -130,13 +145,20 @@ jobs:
             --region asia-southeast2 \
             --platform managed \
             --allow-unauthenticated \
-            --port 8080
-            --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}" \
-            --set-env-vars="DB_USERNAME=${{ secrets.DB_USERNAME }}" \
-            --set-env-vars="DB_HOST=${{ secrets.DB_HOST }}" \
-            --set-env-vars="DB_PASS=${{ secrets.DB_PASS }}" \
-            --set-env-vars="DB_PORT=${{ secrets.DB_PORT }}" \
-            --set-env-vars="REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}" \
-            --set-env-vars="ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}" \
-            --set-env-vars="MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}" \
-            --set-env-vars="MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }}"
+            --port 8080 \
+            --set-env-vars-file env_vars.txt \
+            --verbosity=debug
+
+      - name: Debug - Check deployment status
+        if: failure()
+        run: |
+          gcloud run services describe ${{ secrets.APPLICATION }} \
+            --region asia-southeast2 \
+            --format='yaml(status)'
+
+      - name: Debug - Check recent logs
+        if: failure()
+        run: |
+          gcloud run logs read --service=${{ secrets.APPLICATION }} \
+            --region=asia-southeast2 \
+            --limit=50

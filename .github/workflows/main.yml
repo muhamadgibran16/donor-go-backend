@@ -22,11 +22,16 @@ jobs:
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD}}
       
     steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
       - name: Login to Google Cloud
-        uses: google-github-actions/setup-gcloud@v0
+        uses: 'google-github-actions/auth@v2'
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
           
       - name: Configure Docker Authorization
         run: gcloud auth configure-docker --quiet

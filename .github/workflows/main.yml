@@ -11,19 +11,28 @@ jobs:
     name: Setup Gcloud Account
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.APPLICATION }}
+      IMAGE_NAME: ghcr.io/${{ github.repository }}:${{ github.sha }}
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PASS: ${{ secrets.DB_PASS }}
       REFRESH_TOKEN_SECRET_KEY: ${{ secrets.REFRESH_TOKEN_SECRET_KEY }}
       ACCESS_TOKEN_SECRET_KEY: ${{ secrets.ACCESS_TOKEN_SECRET_KEY }}
-      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME}}
-      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD}}
+      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
+      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
       
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
+
+      - name: Login to GitHub Container Registry
+        run: echo ${{ github.token }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build Docker Image
+        run: docker build -t $IMAGE_NAME .
+
+      - name: Push Docker Image to GitHub Container Registry
+        run: docker push $IMAGE_NAME
 
       - name: Login to Google Cloud
         uses: 'google-github-actions/auth@v2'
@@ -33,18 +42,6 @@ jobs:
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
           
-      - name: Configure Docker Authorization
-        run: gcloud auth configure-docker --quiet
-
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
-      - name: Build Docker Image
-        run: docker build -t $IMAGE_NAME .
-
-      - name: Push Docker Image to Container Registry
-        run: docker push $IMAGE_NAME
-
       - name: Deploy Docker Image to Google Cloud Run
         run: |
             gcloud run deploy ${{ secrets.APPLICATION }} \
@@ -53,4 +50,63 @@ jobs:
               --platform managed \
               --allow-unauthenticated \
               --port 8080 \
-              --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}, DB_USERNAME=${{ secrets.DB_USERNAME }}, DB_PASS=${{ secrets.DB_PASS }}, DB_HOST=${{ secrets.DB_HOST }}, REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}, ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}, MAIL_USERNAME=${{ secrets.MAIL_USERNAME}}, MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD}},"
+              --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}, DB_USERNAME=${{ secrets.DB_USERNAME }}, DB_PASS=${{ secrets.DB_PASS }}, DB_HOST=${{ secrets.DB_HOST }}, REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}, ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}, MAIL_USERNAME=${{ secrets.MAIL_USERNAME }}, MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD }},"
+
+
+
+#name: donor-go-backend
+
+#on:
+#  push:
+#    branches: [master]
+#  pull_request:
+#    branches: [master]
+
+#jobs:
+#  deploy:
+#    name: Setup Gcloud Account
+#    runs-on: ubuntu-latest
+#    env:
+#      IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.APPLICATION }}
+#      DB_NAME: ${{ secrets.DB_NAME }}
+#      DB_USERNAME: ${{ secrets.DB_USERNAME }}
+#      DB_HOST: ${{ secrets.DB_HOST }}
+#      DB_PASS: ${{ secrets.DB_PASS }}
+#      REFRESH_TOKEN_SECRET_KEY: ${{ secrets.REFRESH_TOKEN_SECRET_KEY }}
+#      ACCESS_TOKEN_SECRET_KEY: ${{ secrets.ACCESS_TOKEN_SECRET_KEY }}
+#      MAIL_USERNAME: ${{ secrets.MAIL_USERNAME}}
+#      MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD}}
+      
+#    steps:
+#      - name: Checkout Repository
+#        uses: actions/checkout@v2
+
+#      - name: Login to Google Cloud
+#        uses: 'google-github-actions/auth@v2'
+#        with:
+#          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
+
+#      - name: 'Set up Cloud SDK'
+#        uses: 'google-github-actions/setup-gcloud@v2'
+          
+#      - name: Configure Docker Authorization
+#        run: gcloud auth configure-docker --quiet
+
+#      - name: Checkout Repository
+#        uses: actions/checkout@v2
+
+#      - name: Build Docker Image
+#        run: docker build -t $IMAGE_NAME .
+
+#      - name: Push Docker Image to Container Registry
+#        run: docker push $IMAGE_NAME
+
+#      - name: Deploy Docker Image to Google Cloud Run
+#        run: |
+#            gcloud run deploy ${{ secrets.APPLICATION }} \
+#              --image $IMAGE_NAME \
+#              --region asia-southeast2 \
+#              --platform managed \
+#              --allow-unauthenticated \
+#              --port 8080 \
+#              --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}, DB_USERNAME=${{ secrets.DB_USERNAME }}, DB_PASS=${{ secrets.DB_PASS }}, DB_HOST=${{ secrets.DB_HOST }}, REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}, ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}, MAIL_USERNAME=${{ secrets.MAIL_USERNAME}}, MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD}},"

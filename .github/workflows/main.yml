@@ -9,7 +9,10 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: asia-southeast2-docker.pkg.dev/${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository }}
+  GCP_REGISTRY: asia-southeast2-docker.pkg.dev
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_APP_NAME: ${{ secrets.APPLICATION }}
 
 jobs:
   build-and-push:
@@ -23,7 +26,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v2
 
-      - name: Sign in to GitHub Container Registry
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v1
         with:
           registry: ${{ env.REGISTRY }}
@@ -68,10 +71,22 @@ jobs:
       - name: 'Set up Cloud SDK'
         uses: 'google-github-actions/setup-gcloud@v2'
 
+      - name: Configure Docker for GCP
+        run: gcloud auth configure-docker ${{ env.GCP_REGISTRY }} --quiet
+
+      - name: Pull image from GHCR
+        run: docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+      - name: Tag image for GCP
+        run: docker tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
+
+      - name: Push image to GCP
+        run: docker push ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}:${{ github.sha }}
+
       - name: Deploy Docker Image to Google Cloud Run
         run: |
           gcloud run deploy ${{ secrets.APPLICATION }} \
-            --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
+            --image ${{ env.GCP_REGISTRY }}/${{ env.GCP_PROJECT_ID }}/${{ env.GCP_APP_NAME }}:${{ github.sha }} \
             --region asia-southeast2 \
             --platform managed \
             --allow-unauthenticated \

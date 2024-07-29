@@ -1,48 +1,43 @@
 name: donor-go-backend
 
 on:
-  workflow_dispatch:
   push:
     branches: [master]
   pull_request:
     branches: [master]
 
 jobs:
-  
   deploy:
-    name: Deploy to Cloud Run
+    name: Setup Gcloud Account
     runs-on: ubuntu-latest
     env:
-      IMAGE_NAME: us-central1-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.APPLICATION }}/${{ secrets.APPLICATION }}
+      IMAGE_NAME: gcr.io/${{ secrets.GCP_PROJECT_ID }}/${{ secrets.APPLICATION }}
       DB_NAME: ${{ secrets.DB_NAME }}
       DB_USERNAME: ${{ secrets.DB_USERNAME }}
       DB_HOST: ${{ secrets.DB_HOST }}
       DB_PASS: ${{ secrets.DB_PASS }}
-      DB_PORT: ${{ secrets.DB_PORT }}
       REFRESH_TOKEN_SECRET_KEY: ${{ secrets.REFRESH_TOKEN_SECRET_KEY }}
       ACCESS_TOKEN_SECRET_KEY: ${{ secrets.ACCESS_TOKEN_SECRET_KEY }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME}}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD}}
-
+      
     steps:
-      - name: Checkout Repository
-        uses: actions/checkout@v2
-
       - name: Login to Google Cloud
-        uses: 'google-github-actions/auth@v2'
+        uses: google-github-actions/setup-gcloud@v0
         with:
-          credentials_json: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          service_account_key: ${{ secrets.GOOGLE_APPLICATION_CREDENTIALS }}
           
       - name: Configure Docker Authorization
-        run: gcloud auth configure-docker us-central1-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker --quiet
+
+      - name: Checkout Repository
+        uses: actions/checkout@v2
 
       - name: Build Docker Image
         run: docker build -t $IMAGE_NAME .
 
-      - name: Push Docker Image to Artifact Registry
+      - name: Push Docker Image to Container Registry
         run: docker push $IMAGE_NAME
 
       - name: Deploy Docker Image to Google Cloud Run
@@ -52,13 +47,5 @@ jobs:
               --region asia-southeast2 \
               --platform managed \
               --allow-unauthenticated \
-              --port  8080
-        env:
-          DB_NAME: ${{ secrets.DB_NAME }}
-          DB_USERNAME: ${{ secrets.DB_USERNAME }}
-          DB_HOST: ${{ secrets.DB_HOST }}
-          DB_PASS: ${{ secrets.DB_PASS }}
-          REFRESH_TOKEN_SECRET_KEY: ${{ secrets.REFRESH_TOKEN_SECRET_KEY }}
-          ACCESS_TOKEN_SECRET_KEY: ${{ secrets.ACCESS_TOKEN_SECRET_KEY }}
-          MAIL_USERNAME: ${{ secrets.MAIL_USERNAME}}
-          MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD}}
+              --port 8080 \
+              --set-env-vars="DB_NAME=${{ secrets.DB_NAME }}, DB_USERNAME=${{ secrets.DB_USERNAME }}, DB_PASS=${{ secrets.DB_PASS }}, DB_HOST=${{ secrets.DB_HOST }}, REFRESH_TOKEN_SECRET_KEY=${{ secrets.REFRESH_TOKEN_SECRET_KEY }}, ACCESS_TOKEN_SECRET_KEY=${{ secrets.ACCESS_TOKEN_SECRET_KEY }}, MAIL_USERNAME=${{ secrets.MAIL_USERNAME}}, MAIL_PASSWORD=${{ secrets.MAIL_PASSWORD}},"

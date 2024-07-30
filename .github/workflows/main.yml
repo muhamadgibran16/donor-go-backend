@@ -72,6 +72,7 @@ jobs:
       ACCESS_TOKEN_SECRET_KEY: ${{ secrets.ACCESS_TOKEN_SECRET_KEY }}
       MAIL_USERNAME: ${{ secrets.MAIL_USERNAME}}
       MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD}}
+      BUCKET_NAME: ${{ secrets.BUCKET_NAME}}
 
     steps:
       - name: Login to GitHub Container Registry
@@ -146,6 +147,7 @@ jobs:
           ACCESS_TOKEN_SECRET_KEY: "${{ secrets.ACCESS_TOKEN_SECRET_KEY }}"
           MAIL_USERNAME: "${{ secrets.MAIL_USERNAME }}"
           MAIL_PASSWORD: "${{ secrets.MAIL_PASSWORD }}"
+          BUCKET_NAME: "${{ secrets.BUCKET_NAME }}"
           EOF
 
       - name: Debug - Check env_vars.yaml content

@@ -12,6 +12,7 @@ const storage = new Storage({
 })
 
 /** Set up bucket name */
+const bucket_name = process.env.BUCKET_NAME
 const bucket = storage.bucket(bucket_name)
 
 /** Upload Photo Profile */

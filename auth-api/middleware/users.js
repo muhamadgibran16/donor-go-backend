@@ -17,7 +17,9 @@ const storage = new Storage({
   projectId: process.env.GCP_PROJECT_ID,
 })
 
-const bucket = storage.bucket('ember-donor')
+const bucket_name = process.env.BUCKET_NAME
+
+const bucket = storage.bucket(bucket_name)
 
 /** Processing file upload */
 const processFiles = util.promisify(multer)

@@ -12,7 +12,7 @@ const storage = new Storage({
 })
 
 /** Set up bucket name */
-const bucket = storage.bucket('ember-donor')
+const bucket = storage.bucket(bucket_name)
 
 /** Upload Photo Profile */
 const imgUpload = async (req, res) => {
@@ -22,7 +22,7 @@ const imgUpload = async (req, res) => {
         message: 'Please upload a file!',
       })
     }
-    const folder = 'userprofile'
+    const folder = 'user'
     const filename = `${folder}/${req.uid}/${req.file.originalname}`
     const blob = bucket.file(filename)
     const blobStream = blob.createWriteStream()

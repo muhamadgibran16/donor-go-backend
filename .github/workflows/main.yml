@@ -160,7 +160,7 @@ jobs:
             --region asia-southeast2 \
             --platform managed \
             --allow-unauthenticated \
-            --port 8080 \
+            --port 8000 \
             --env-vars-file env_vars.yaml \
             --verbosity=debug
 
